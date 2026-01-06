@@ -1,0 +1,61 @@
+# ==============================
+# 1. Dependencies (가장 중요)
+# ==============================
+# 로컬의 node_modules는 호스트 OS(Windows/Mac) 기준이므로
+# 리눅스 컨테이너 환경과 충돌할 수 있습니다. 반드시 제외합니다.
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# ==============================
+# 2. Build Output
+# ==============================
+# 로컬에서 빌드한 결과물은 제외하고, 컨테이너 내부에서 새로 빌드합니다.
+build
+dist
+
+# ==============================
+# 3. Environment Variables & Secrets
+# ==============================
+# 보안을 위해 로컬 환경 설정 파일이 이미지에 포함되지 않도록 합니다.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==============================
+# 4. Git & Version Control
+# ==============================
+.git
+.gitignore
+
+# ==============================
+# 5. IDE & Editor Config
+# ==============================
+.vscode
+.idea
+*.swp
+*.swo
+
+# ==============================
+# 6. Testing & Coverage
+# ==============================
+coverage
+__tests__
+cypress
+
+# ==============================
+# 7. Docker related (Optional)
+# ==============================
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# ==============================
+# 8. OS Files
+# ==============================
+.DS_Store
+Thumbs.db
