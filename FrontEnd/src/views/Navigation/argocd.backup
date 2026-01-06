@@ -1,0 +1,94 @@
+                    <div>
+                        <Button
+                            sx={naviButtonStyle}
+                            onMouseEnter={handleMenuOpen}
+                            onClick={handleMenuOpen}
+                        >
+                            Argo CD
+                        </Button>
+
+                        <Menu
+                            anchorEl={anchorEl}
+                            open={Boolean(anchorEl)}
+                            onClose={handleMenuClose}
+                            MenuListProps={{
+                                onMouseLeave: handleMenuClose,
+                                sx: {
+                                    backgroundColor: "white",
+                                    borderRadius: "12px",
+                                    boxShadow:
+                                        "0px 4px 12px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.1)",
+                                    paddingY: 0.5,
+                                    minWidth: 200,
+                                },
+                            }}
+                            anchorOrigin={{
+                                vertical: "bottom",
+                                horizontal: "center",
+                            }}
+                            transformOrigin={{
+                                vertical: "top",
+                                horizontal: "center",
+                            }}
+                        >
+                            <MenuItem
+                                sx={{
+                                    fontWeight: 600,
+                                    fontFamily: "'Poppins', 'Noto Sans KR', sans-serif",
+                                    fontSize: "15px",
+                                    borderRadius: "8px",
+                                    color: "#003366",
+                                    mb: 0.5,
+                                    "&:hover": {
+                                        backgroundColor: "#e6f0ff",
+                                        color: "#001f4d",
+                                    },
+                                }}
+                                onClick={() => {
+                                    window.open(datacenterUrl, "_blank", "noopener,noreferrer");
+                                    handleMenuClose();
+                                }}
+                            >
+                                Datacenter ArgoCD
+                            </MenuItem>
+                            <MenuItem
+                                sx={{
+                                    fontWeight: 600,
+                                    fontFamily: "'Poppins', 'Noto Sans KR', sans-serif",
+                                    fontSize: "15px",
+                                    borderRadius: "8px",
+                                    color: "#003366",
+                                    mb: 0.5,
+                                    "&:hover": {
+                                        backgroundColor: "#e6f0ff",
+                                        color: "#001f4d",
+                                    },
+                                }}
+                                onClick={() => {
+                                    window.open(kafkaUrl, "_blank", "noopener,noreferrer");
+                                    handleMenuClose();
+                                }}
+                            >
+                                Kafka ArgoCD
+                            </MenuItem>
+                            <MenuItem
+                                sx={{
+                                    fontWeight: 600,
+                                    fontFamily: "'Poppins', 'Noto Sans KR', sans-serif",
+                                    fontSize: "15px",
+                                    borderRadius: "8px",
+                                    color: "#003366",
+                                    "&:hover": {
+                                        backgroundColor: "#e6f0ff",
+                                        color: "#001f4d",
+                                    },
+                                }}
+                                onClick={() => {
+                                    window.open(lmvUrl, "_blank", "noopener,noreferrer");
+                                    handleMenuClose();
+                                }}
+                            >
+                                Monitoring ArgoCD
+                            </MenuItem>
+                        </Menu>
+                    </div>

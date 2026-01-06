@@ -1,0 +1,32 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+ARG REACT_APP_PROD_BASE_URL
+ARG REACT_APP_KIBANA_URL_KMSG
+ARG REACT_APP_KIBANA_URL_SERVICE
+ARG REACT_APP_KIBANA_URL_AUTH
+
+
+ENV REACT_APP_PROD_BASE_URL=$REACT_APP_PROD_BASE_URL
+ENV REACT_APP_KIBANA_URL_KMSG=$REACT_APP_KIBANA_URL_KMSG
+ENV REACT_APP_KIBANA_URL_SERVICE=$REACT_APP_KIBANA_URL_SERVICE
+ENV REACT_APP_KIBANA_URL_AUTH=$REACT_APP_KIBANA_URL_AUTH
+
+COPY package.json package-lock.json ./
+
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ----RUN ---------
+FROM nginx:1.23-alpine
+
+COPY --from=builder /app/build /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

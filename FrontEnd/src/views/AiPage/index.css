@@ -1,0 +1,162 @@
+/* src/Dashboard.css (Updated for View Transition) */
+:root {
+    --bg-color: #003c88;
+    --main-bg: #ffffff;
+    --sidebar-bg: #e0e1dd;
+    --notification-bg: #ffffff;
+    --text-color: #1b263b;
+    --border-color: #d3d3d3;
+    --accent-color: #003c88;
+    --transition-speed: 1.0s;
+}
+
+/* body, container, main-content 등 이전과 동일한 스타일 */
+body, html { margin: 0; padding: 0; height: 100%; font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; background-color: var(--bg-color); }
+.container { display: flex; height: 100vh; box-sizing: border-box; padding: 40px; gap: 20px; }
+.main-content { flex: 6; background-color: var(--main-bg); border-radius: 8px; padding: 40px; overflow-y: auto; scrollbar-width: none; color: var(--text-color); }
+.main-content h1 { font-size: 2em; margin-top: 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+.content-section { margin-bottom: 30px; }
+.content-section h3 { font-size: 1.2em; color: var(--accent-color); margin-bottom: 10px; }
+.content-section pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Courier New', monospace; }
+.content-section ul { padding-left: 20px; line-height: 1.6; }
+.notification-item { background-color: var(--notification-bg); padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 5px solid var(--border-color); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+.notification-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.notification-item.active { border-left-color: var(--accent-color); font-weight: bold; }
+.notification-title { font-size: 1em; margin-bottom: 5px; }
+.notification-time { font-size: 0.8em; color: #666; }
+
+/* 사이드바의 프레임 역할 */
+.sidebar-container {
+    flex: 4;
+    position: relative;
+    max-width: 100%;
+    background-color: var(--sidebar-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 10px;
+    transition: padding var(--transition-speed) ease-in-out; /* 부드럽게 전환 */
+    clip-path: inset(0 round 8px);
+}
+
+.sidebar-container.chat-view-active {
+    padding: 0;
+}
+
+/* 실제 좌우로 움직일 슬라이딩 영역 */
+.sidebar-sliding-wrapper {
+    display: flex; /* 두 개의 뷰를 가로로 나란히 배치 */
+    width: 200%;   /* 두 뷰의 넓이를 합친 값 (각각 100%씩 차지) */
+    height: 100%;
+    transition: transform var(--transition-speed) ease-in-out;
+}
+
+/* 각 화면(뷰) 스타일 */
+.notification-sidebar, .ai-chat-container {
+    width: 50%; /* wrapper 너비의 절반, 즉 컨테이너의 100% */
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    box-sizing: border-box;
+}
+
+/* 'chat-view' 활성화 시 슬라이딩 wrapper를 왼쪽으로 50% 이동 */
+.sidebar-container.chat-view-active .sidebar-sliding-wrapper {
+    transform: translateX(-50%);
+}
+
+
+/* 버튼 스타일 */
+
+.sidebar-button {
+    position: absolute;
+    top: 50%;
+    left: 100%; 
+    transform: translate(-50%, -50%);
+    
+    width: 65px; 
+    height: 65px;
+    border-radius: 50%; 
+    border: 4px solid var(--bg-color);
+    background-color: var(--main-bg); 
+    color: var(--text-color);
+    
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+    
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    user-select: none;
+    z-index: 20;
+    
+    /* left와 transform 속성 변화에 애니메이션 적용 */
+    transition: left var(--transition-speed) ease-in-out, transform var(--transition-speed) ease-in-out;
+}
+
+/* 'chat-view' 활성화 시 버튼 위치를 왼쪽 끝(left 0%)으로 이동 */
+.sidebar-container.chat-view-active .sidebar-button {
+    left: 0%;
+}
+
+/* 버튼 내부 화살표 스타일 (가독성을 위해 정리) */
+
+.button-arrow-wrapper {
+    position: relative;
+    width: 24px;
+    height: 24px;
+}
+
+.button-arrow {
+    position: absolute; 
+    top: -5px; 
+    left: 0; 
+    font-size: 24px;
+    transition: opacity 0.1s ease-in-out var(--transition-speed);
+}
+
+.arrow-right { opacity: 0; }
+.sidebar-container.chat-view-active .arrow-left { opacity: 0; }
+.sidebar-container.chat-view-active .arrow-right { opacity: 1; }
+
+.button-text {
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: 2px;
+}
+
+.loading-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    text-align: center;
+    color: #333;
+    font-size: 16px;
+}
+.loading-text {
+    color: gray;
+    margin-top: 10px;
+}
+
+/* 돌아가는 원형 스피너 */
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #003c88;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.log-box {
+  text-align: left;
+}
