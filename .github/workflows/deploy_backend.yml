@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'BackEnd/**'
 
 env:
   ECR_REPOSITORY: solog-backend       
@@ -16,6 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+
+      defaults:
+      run:
+        working-directory: ./BackEnd
 
     steps:
       - name: Checkout Source Code
