@@ -28,6 +28,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.10.1'
 	// ✅ 기본 Spring Boot Starter
 	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
 	// ✅ 🔥 Web MVC + REST API 기능 (Controller, RestTemplate 등)
 	implementation 'org.springframework.boot:spring-boot-starter-web'
