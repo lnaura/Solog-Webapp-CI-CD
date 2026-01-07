@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: read
 
-      defaults:
+    defaults:
       run:
         working-directory: ./BackEnd
 
