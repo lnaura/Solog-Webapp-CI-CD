@@ -9,7 +9,7 @@ RUN apk update && apk add --no-cache dos2unix
 COPY gradlew .
 COPY gradle gradle
 COPY build.gradle .
-COPY settings.gradle .
+COPY settings.gradle . 
 
 # [추가됨] gradlew 파일의 줄바꿈 형식을 리눅스용(LF)으로 변환
 RUN dos2unix gradlew
