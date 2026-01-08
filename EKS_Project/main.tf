@@ -74,3 +74,52 @@ resource "aws_ecr_repository" "frontend" {
     scan_on_push = true
   }
 }
+
+# AWS Load Balancer Controller를 위한 IAM Role 생성(IRSA)
+
+module "lb_role" {
+  source    = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~>5.30"
+  role_name = "solog-eks-lb-controller-role"
+
+  # OIDC Provider와 연결 (이게 되어야 K8s가 AWS IAM을 빌려 씁니다)
+  # module.eks.oidc_provider_arn 등 기존 EKS 모듈의 output을 참조하세요.
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
+    }
+  }
+
+  attach_load_balancer_controller_policy = true
+}
+
+# 2. Helm Chart를 이용해 컨트롤러 설치
+resource "helm_release" "aws_load_balancer_controller" {
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+
+  # 설치 시 값을 동적으로 주입 (ServiceAccount에 IAM Role 연결)
+  set {
+    name  = "clusterName"
+    value = module.eks.cluster_name
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  # 핵심: 위에서 만든 IAM Role의 ARN을 주석(Annotation)으로 달아줍니다.
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.lb_role.iam_role_arn
+  }
+}
