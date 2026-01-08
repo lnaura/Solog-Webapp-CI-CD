@@ -1,18 +1,18 @@
-# deploy_backend.yml
-name: Build and Push to ECR & Update Manifest
+name: Build and Push Frontend to ECR & Update Manifest
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'BackEnd/**'
+      - 'FrontEnd/**'
 
 env:
-  ECR_REPOSITORY: solog-backend       
-  IMAGE_TAG: ${{ github.sha }}       
+  ECR_REPOSITORY: solog-frontend  
+  IMAGE_TAG: ${{ github.sha }}
   MANIFEST_REPO: lnaura/Solog-Webapp-CI-CD-Manifests
-  MANIFEST_FILE_PATH: backend/deployment.yaml
+  MANIFEST_FILE_PATH: frontend/deployment.yaml
+  WORKING_DIRECTORY: ./FrontEnd
 
 jobs:
   ci-cd-pipeline:
@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./BackEnd
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
     steps:
       - name: Checkout Source Code
@@ -43,13 +43,20 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          # 이미지 빌드
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Building Docker Image..."
           
-          # 이미지 푸시
+          # Docker Build with Build Args
+          docker build \
+            --build-arg REACT_APP_PROD_BASE_URL=${{ secrets.REACT_APP_PROD_BASE_URL }} \
+            --build-arg REACT_APP_KIBANA_URL_KMSG=${{ secrets.REACT_APP_KIBANA_URL_KMSG }} \
+            --build-arg REACT_APP_KIBANA_URL_SERVICE=${{ secrets.REACT_APP_KIBANA_URL_SERVICE }} \
+            --build-arg REACT_APP_KIBANA_URL_AUTH=${{ secrets.REACT_APP_KIBANA_URL_AUTH }} \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          
+          echo "Pushing Docker Image..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           
-          # 'latest' 태그도 갱신 (선택 사항이지만 디버깅용으로 유용)
+          # latest 태그 갱신
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
@@ -57,30 +64,31 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          # 1. SSH 에이전트 설정 및 개인키 등록
+          # 1. SSH 설정
           mkdir -p ~/.ssh
           echo "${{ secrets.MANIFEST_REPO_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          
-          # 2. Known Hosts에 GitHub 등록 (보안 경고 방지)
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           
-          # 3. Git 사용자 설정
+          # 2. Git 설정
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           
-          # 4. Manifest 리포지토리 클론 (SSH 주소 사용!)
-          # 주의: https://github.com/... 이 아니라 git@github.com:... 형식을 써야 합니다.
+          # 3. Manifest 리포지토리 클론
+          # 작업 디렉토리가 FrontEnd이므로 상위 레벨로 나가서 클론하거나, 임시 폴더를 사용해야 안전합니다.
+          # 여기서는 /tmp 디렉토리를 사용하여 경로 충돌을 방지합니다.
+          cd /tmp
           git clone git@github.com:${{ env.MANIFEST_REPO }}.git
           
-          # 5. 디렉토리 이동 및 이미지 태그 수정
+          # 4. 이미지 태그 수정
           repo_name=$(basename ${{ env.MANIFEST_REPO }})
           cd $repo_name
           
-          # sed 명령어로 이미지 태그 교체 (이전과 동일)
+          # sed 명령어로 frontend/deployment.yaml 파일 내의 이미지 태그 교체
+          # 주의: MANIFEST_FILE_PATH가 정확히 frontend 디렉토리를 가리키는지 확인하세요.
           sed -i "s|image: .*$ECR_REPOSITORY:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" ${{ env.MANIFEST_FILE_PATH }}
           
-          # 6. 변경 사항 푸시
-          git add .
-          git commit -m "Update image tag to $IMAGE_TAG"
+          # 5. 변경 사항 푸시
+          git add ${{ env.MANIFEST_FILE_PATH }}
+          git commit -m "Update Frontend image tag to $IMAGE_TAG"
           git push origin main
