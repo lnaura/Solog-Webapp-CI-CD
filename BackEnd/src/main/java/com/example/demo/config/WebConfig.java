@@ -16,7 +16,7 @@ public class WebConfig {
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
-				String[] origins = allowedOrigins.split(",");
+				//String[] origins = allowedOrigins.split(",");
 				registry.addMapping("/api/grafana/**")
 						.allowedOriginPatterns("*")
 						.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
