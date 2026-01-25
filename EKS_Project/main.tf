@@ -20,6 +20,7 @@ module "vpc" {
   }
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
+    "karpenter.sh/discovery" = "gitops-cluster"
   }
 }
 
@@ -29,7 +30,7 @@ module "eks" {
   version = "20.2.0"
 
   cluster_name    = "gitops-cluster"
-  cluster_version = "1.29" # 안정적인 K8s 버전 선택
+  cluster_version = "1.29" 
 
   cluster_endpoint_public_access = true # 로컬 PC에서 kubectl로 접속 허용
 
@@ -46,13 +47,17 @@ module "eks" {
       max_size     = 3
       desired_size = 2
 
-      instance_types = ["t3.medium"] # Spring Boot + React + ArgoCD 돌리려면 t3.small은 부족할 수 있음
+      instance_types = ["t3.medium"] 
       capacity_type  = "ON_DEMAND"
     }
   }
 
   # 현재 Terraform을 돌리는 사용자에게 클러스터 관리자 권한 부여
   enable_cluster_creator_admin_permissions = true
+
+  node_security_group_tags = {
+    "karpenter.sh/discovery" = "gitops-cluster"
+  }
 }
 
 # 3. ECR 리포지토리 (Backend: Spring Boot)
@@ -122,4 +127,35 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.lb_role.iam_role_arn
   }
+}
+
+# Karpenter 모듈 설정
+module "karpenter" {
+  source  = "terraform-aws-modules/eks/aws//modules/karpenter"
+  version = "~> 20.0"
+
+  cluster_name = "gitops-cluster"
+
+  enable_pod_identity = false
+  enable_irsa = true
+
+  irsa_oidc_provider_arn          = module.eks.oidc_provider_arn
+  irsa_namespace_service_accounts = ["kube-system:karpenter"]
+
+  enable_v1_permissions = true
+  node_iam_role_name          = "KarpenterNodeRole-gitops-cluster"
+  create_instance_profile     = true 
+
+  # Spot 종료 알림을 위한 SQS 이름 설정
+  queue_name = "gitops-cluster-karpenter-queue"
+
+  tags = {
+    Environment = "dev"
+    Terraform   = "true"
+  }
+}
+
+# EC2 Spot 인스턴스 사용을 위한 서비스 연계 역할 생성
+resource "aws_iam_service_linked_role" "spot" {
+  aws_service_name = "spot.amazonaws.com"
 }

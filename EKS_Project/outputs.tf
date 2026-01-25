@@ -30,3 +30,11 @@ output "ecr_repository_urls" {
     frontend = aws_ecr_repository.frontend.repository_url
   }
 }
+
+output "karpenter_controller_role_arn" {
+  value = module.karpenter.iam_role_arn
+}
+
+output "karpenter_node_role_name" {
+  value = module.karpenter.node_iam_role_name
+}
