@@ -127,6 +127,7 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
     value = module.lb_role.iam_role_arn
   }
+  depends_on = [module.eks]
 }
 
 # Karpenter 모듈 설정
