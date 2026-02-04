@@ -2,7 +2,7 @@
 .git
 .gitignore
 
-# Gradle 빌드 캐시 및 결과물 (이미지 내부에서 다시 빌드하므로 제외)
+# Gradle 빌드 캐시 및 결과물
 .gradle
 build
 out
