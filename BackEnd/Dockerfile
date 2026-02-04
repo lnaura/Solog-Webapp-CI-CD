@@ -3,7 +3,7 @@ FROM amazoncorretto:21-alpine-jdk AS builder
 
 WORKDIR /app 
 
-# [추가됨] 윈도우 사용자를 위한 줄바꿈 변환 도구 설치
+# 윈도우 사용자를 위한 줄바꿈 변환 도구 설치
 RUN apk update && apk add --no-cache dos2unix
 
 COPY gradlew .
