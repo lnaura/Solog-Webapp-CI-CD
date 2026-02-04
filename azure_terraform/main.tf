@@ -103,6 +103,17 @@ resource "azurerm_network_security_group" "aks_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+  security_rule {
+    name                       = "AllowAzureLoadBalancerInBound"
+    priority                   = 130
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*" # 모든 포트 허용 (로드밸런서 통신용)
+    source_address_prefix      = "AzureLoadBalancer" # Azure 로드밸런서 서비스 태그
+    destination_address_prefix = "*"
+  }
 }
 
 # 서브넷과 NSG 연결
