@@ -60,3 +60,53 @@ resource "azurerm_role_assignment" "aks_to_acr" {
   scope                            = azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
 }
+
+# NSG
+resource "azurerm_network_security_group" "aks_nsg" {
+  name                = "nsg-aks"
+  location            = azurerm_resource_group.solog.location
+  resource_group_name = azurerm_resource_group.solog.name
+
+  # SSH
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  # HTTP
+  security_rule {
+    name                       = "AllowHTTP"
+    priority                   = 110
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  # HTTPS
+  security_rule {
+    name                       = "AllowHTTPS"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+# 서브넷과 NSG 연결
+resource "azurerm_subnet_network_security_group_association" "aks_nsg_assoc" {
+  subnet_id                 = azurerm_subnet.aks_subnet.id
+  network_security_group_id = azurerm_network_security_group.aks_nsg.id
+}
