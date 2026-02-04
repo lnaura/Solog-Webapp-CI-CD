@@ -114,4 +114,6 @@ jobs:
           # 5. 변경 사항 푸시
           git add kustomization.yaml
           git commit -m "Update Backend image tag to ${{ env.IMAGE_TAG }} (${{ env.TARGET }})"
+          
+          git pull --rebase origin main
           git push origin main
