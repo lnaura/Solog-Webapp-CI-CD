@@ -7,12 +7,24 @@ on:
       - main
     paths:
       - 'BackEnd/**'
+  workflow_dispatch:
+    inputs:
+      target_cloud:
+        description: '배포할 클라우드를 선택하세요'
+        required: true
+        default: 'azure'
+        type: choice
+        options:
+          - azure
+          - aws
 
 env:
-  ECR_REPOSITORY: solog-backend       
+  TARGET: ${{ github.event_name == 'push' && 'azure' || github.event.inputs.target_cloud }}
+  IMAGE_NAME: solog-backend      
   IMAGE_TAG: ${{ github.sha }}       
   MANIFEST_REPO: lnaura/Solog-Webapp-CI-CD-Manifests
   MANIFEST_FILE_PATH: backend/deployment.yaml
+  WORKING_DIRECTORY: ./BackEnd
 
 jobs:
   ci-cd-pipeline:
@@ -22,13 +34,15 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./BackEnd
+        working-directory: ${{ env.WORKING_DIRECTORY }}
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v3
 
+      # AWS 단계
       - name: Configure AWS credentials
+        if: ${{ env.TARGET == 'aws' }}
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -36,26 +50,45 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: ${{ env.TARGET == 'aws' }}
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      # Azure 단계
+      - name: Azure Login
+        if: ${{ env.TARGET == 'azure' }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        if: ${{ env.TARGET == 'azure' }}
         run: |
-          # 이미지 빌드
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          az acr login --name ${{ secrets.ACR_NAME }}
+          echo "REGISTRY_URL=$(az acr show --name ${{ secrets.ACR_NAME }} --query loginServer -o tsv)" >> $GITHUB_ENV
+      
+      # 공통
+      - name: Build, tag, and push image
+        run: |
+          if [ "${{ env.TARGET }}" == "aws" ]; then
+            REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          else
+            REGISTRY="$REGISTRY_URL"
+          fi
+
+          FULL_IMAGE="$REGISTRY/${{ env.IMAGE_NAME }}"
+          echo "Building Docker Image for $FULL_IMAGE..."
+
+          docker build -t $FULL_IMAGE:${{ env.IMAGE_TAG }} .
           
-          # 이미지 푸시
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          
-          # 'latest' 태그도 갱신 (선택 사항이지만 디버깅용으로 유용)
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "Pushing Docker Image..."
+          docker push $FULL_IMAGE:${{ env.IMAGE_TAG }}
+          docker tag $FULL_IMAGE:${{ env.IMAGE_TAG }} $FULL_IMAGE:latest
+          docker push $FULL_IMAGE:latest
+
+          echo "FINAL_REGISTRY=$REGISTRY" >> $GITHUB_ENV
 
       - name: Update Kubernetes Manifest
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           # 1. SSH 에이전트 설정 및 개인키 등록
           mkdir -p ~/.ssh
@@ -69,18 +102,15 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
           
-          # 4. Manifest 리포지토리 클론 (SSH 주소 사용!)
-          # 주의: https://github.com/... 이 아니라 git@github.com:... 형식을 써야 합니다.
+          # 4. Manifest 리포지토리 클론 (SSH 주소 사용)
+          cd /tmp
           git clone git@github.com:${{ env.MANIFEST_REPO }}.git
+          cd $(basename ${{ env.MANIFEST_REPO }})
           
-          # 5. 디렉토리 이동 및 이미지 태그 수정
-          repo_name=$(basename ${{ env.MANIFEST_REPO }})
-          cd $repo_name
+          # 4. 이미지 태그 및 레지스트리 교체
+          sed -i "s|image: .*${{ env.IMAGE_NAME }}:.*|image: ${{ env.FINAL_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" ${{ env.MANIFEST_FILE_PATH }}
           
-          # sed 명령어로 이미지 태그 교체 (이전과 동일)
-          sed -i "s|image: .*$ECR_REPOSITORY:.*|image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG|g" ${{ env.MANIFEST_FILE_PATH }}
-          
-          # 6. 변경 사항 푸시
-          git add .
-          git commit -m "Update image tag to $IMAGE_TAG"
+          # 5. 변경 사항 푸시
+          git add ${{ env.MANIFEST_FILE_PATH }}
+          git commit -m "Update Backend image tag to ${{ env.IMAGE_TAG }} (${{ env.TARGET }})"
           git push origin main
