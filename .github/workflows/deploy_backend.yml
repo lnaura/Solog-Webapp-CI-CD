@@ -105,12 +105,13 @@ jobs:
           # 4. Manifest 리포지토리 클론 (SSH 주소 사용)
           cd /tmp
           git clone git@github.com:${{ env.MANIFEST_REPO }}.git
-          cd $(basename ${{ env.MANIFEST_REPO }})
+          repo_name=$(basename ${{ env.MANIFEST_REPO }})
           
-          # 4. 이미지 태그 및 레지스트리 교체
-          sed -i "s|image: .*${{ env.IMAGE_NAME }}:.*|image: ${{ env.FINAL_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" ${{ env.MANIFEST_FILE_PATH }}
+          # 4. Kustomize를 사용하여 이미지 태그 업데이트
+          cd $repo_name/overlays/${{ env.TARGET }}/backend
+          kustomize edit set image solog-backend=${{ env.FINAL_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           
           # 5. 변경 사항 푸시
-          git add ${{ env.MANIFEST_FILE_PATH }}
+          git add kustomization.yaml
           git commit -m "Update Backend image tag to ${{ env.IMAGE_TAG }} (${{ env.TARGET }})"
           git push origin main

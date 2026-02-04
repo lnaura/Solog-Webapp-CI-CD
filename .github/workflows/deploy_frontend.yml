@@ -73,7 +73,7 @@ jobs:
           else
             REGISTRY="$REGISTRY_URL"
           fi
-          
+
           FULL_IMAGE="$REGISTRY/${{ env.IMAGE_NAME }}"
 
           echo "Building Docker Image..."
@@ -108,11 +108,13 @@ jobs:
           # 3. Manifest 리포지토리 클론
           cd /tmp
           git clone git@github.com:${{ env.MANIFEST_REPO }}.git
-          cd $(basename ${{ env.MANIFEST_REPO }})
-
-          # 어떤 클라우드든 상관없이 이미지 태그 교체
-          sed -i "s|image: .*${{ env.IMAGE_NAME }}:.*|image: ${{ env.FINAL_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}|g" ${{ env.MANIFEST_FILE_PATH }}
           
-          git add ${{ env.MANIFEST_FILE_PATH }}
-          git commit -m "Update Frontend image tag to ${{ env.IMAGE_TAG }} (${{ env.TARGET }})"
+          cd /tmp/$(basename ${{ env.MANIFEST_REPO }})/overlays/${{ env.TARGET }}/frontend
+
+          # Kustomize 명령어로 이미지 태그만 업데이트
+          kustomize edit set image solog-frontend=${{ env.FINAL_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          
+          # 4. 변경 사항 푸시
+          git add kustomization.yaml
+          git commit -m "Update ${{ env.TARGET }} image tag to ${{ env.IMAGE_TAG }}"
           git push origin main
