@@ -1,4 +1,4 @@
-# --- Stage 1: Build ---
+# Stage 1: Build 
 FROM amazoncorretto:21-alpine-jdk AS builder
 
 WORKDIR /app 
