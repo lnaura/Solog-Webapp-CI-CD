@@ -19,7 +19,7 @@ on:
           - aws
 
 env:
-  TARGET: ${{ github.event_name == 'push' && 'azure' || github.event.inputs.target_cloud }}
+  TARGET: ${{ github.event.inputs.target_cloud || 'aws' }}
   IMAGE_NAME: solog-backend      
   IMAGE_TAG: ${{ github.sha }}       
   MANIFEST_REPO: lnaura/Solog-Webapp-CI-CD-Manifests
