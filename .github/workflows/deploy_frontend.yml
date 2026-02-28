@@ -11,7 +11,7 @@ on:
       target_cloud:
         description: '배포할 클라우드를 선택하세요'
         required: true
-        default: 'azure'
+        default: 'aws'
         type: choice
         options:
           - azure
